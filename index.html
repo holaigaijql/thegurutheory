@@ -63,6 +63,10 @@ a:hover{color:var(--accent)}
 .btn[disabled]{opacity:.6;cursor:default}
 .form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;max-width:480px}
 .form.two{grid-template-columns:minmax(0,1fr)}
+.form.pair{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.form.pair .btn{grid-column:1/-1}
+.form label.consent{position:static;width:auto;height:auto;overflow:visible;clip:auto;grid-column:1/-1;display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;margin-top:4px;font-size:13.5px;line-height:1.5;color:var(--mute);cursor:pointer}
+.form label.consent input{width:18px;height:18px;min-height:0;margin:2px 0 0;padding:0;accent-color:var(--accent);cursor:pointer}
 .form label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .form input{width:100%;min-height:48px;padding:0 16px;border:1px solid #3a414b;border-radius:2px;background:rgba(255,255,255,.04);color:var(--ink);font:16px var(--sans)}
 .form input::placeholder{color:var(--faint)}
@@ -190,7 +194,7 @@ footer .t{font:600 20px var(--serif);color:var(--ink)}
  .navr .btn{display:none}
 }
 @media(max-width:480px){
- .form{grid-template-columns:minmax(0,1fr)}
+ .form,.form.pair{grid-template-columns:minmax(0,1fr)}
  .form .btn{width:100%}
 }
 @media(min-width:721px){.dock{display:none}}
@@ -226,9 +230,12 @@ footer .t{font:600 20px var(--serif);color:var(--ink)}
     <p class="kicker">A novel by John Cokinos</p>
     <h1>The Guru Theory</h1>
     <p class="sub">A novel approach to self-development.</p>
-    <form class="form signup" data-source="hero" novalidate>
+    <form class="form pair signup" data-source="hero" novalidate>
+      <label for="name-hero">First name</label>
+      <input id="name-hero" name="name" type="text" autocomplete="given-name" placeholder="First name" required>
       <label for="email-hero">Email address</label>
       <input id="email-hero" name="email" type="email" autocomplete="email" placeholder="Your email address" required>
+      <label class="consent"><input name="consent" type="checkbox" required> <span>I agree to receive occasional emails about The Guru Theory (book updates, launch news and special offers) and for my details to be stored for that. Unsubscribe any time.</span></label>
       <button class="btn" type="submit">Join the early list</button>
       <p class="msg" aria-live="polite"></p>
       <input class="hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
@@ -302,13 +309,14 @@ footer .t{font:600 20px var(--serif);color:var(--ink)}
       <h2 id="list-h">Be among the first to read it.</h2>
       <p class="lede">The Guru Theory is in its final edit. Join the early list and you’ll hear first about the cover reveal, the release date and news from the mountain. No spam, and one click to leave.</p>
       <form class="form two signup" data-source="list" novalidate>
-        <label for="name-list">First name (optional)</label>
-        <input id="name-list" name="name" type="text" autocomplete="given-name" placeholder="First name (optional)">
+        <label for="name-list">First name</label>
+        <input id="name-list" name="name" type="text" autocomplete="given-name" placeholder="First name" required>
         <label for="email-list">Email address</label>
         <input id="email-list" name="email" type="email" autocomplete="email" placeholder="Your email address" required>
+        <label class="consent"><input name="consent" type="checkbox" required> <span>I agree to receive occasional emails about The Guru Theory (book updates, launch news and special offers) and for my details to be stored for that. Unsubscribe any time.</span></label>
         <button class="btn" type="submit">Join the early list</button>
         <p class="msg" aria-live="polite"></p>
-      <input class="hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <input class="hp" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
       </form>
     </div>
   </div>
@@ -416,7 +424,7 @@ footer .t{font:600 20px var(--serif);color:var(--ink)}
   obsList.observe(list);
 
   // early list sign-up: HubSpot (main list) and Google Form (backup sheet)
-  const HUBSPOT = { portalId: '', formGuid: '' };
+  const HUBSPOT = { portalId: '246946924', formGuid: 'ee8a860b-c8c2-4ef8-99d8-e57637f07a33', subscriptionTypeId: 3347929869 };
   const GFORM = { action: 'https://docs.google.com/forms/d/e/1FAIpQLSfKl17iVTt-yiG3Rna17-ELgStqstdl9xvfga7Gp38Vw5Umyg/formResponse', email: 'entry.403017705', name: 'entry.333966387', source: 'entry.1044590554' };
   const timed = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
   const toGoogle = d => {
@@ -425,10 +433,9 @@ footer .t{font:600 20px var(--serif);color:var(--ink)}
   };
   const toHubSpot = d => {
     if (!HUBSPOT.portalId || !HUBSPOT.formGuid) return Promise.resolve(false);
-    const fields = [{ name: 'email', value: d.email }];
-    if (d.name) fields.push({ name: 'firstname', value: d.name });
-    const hutk = (document.cookie.match(/(?:^|; )hubspotutk=([^;]+)/) || [])[1];
-    const body = JSON.stringify({ fields, context: { pageUri: location.href, pageName: 'The Guru Theory: ' + d.source, ...(hutk ? { hutk } : {}) } });
+    const fields = [{ name: 'email', value: d.email }, { name: 'firstname', value: d.name }];
+    const legalConsentOptions = { consent: { consentToProcess: true, text: d.consentText, communications: [{ value: true, subscriptionTypeId: HUBSPOT.subscriptionTypeId, text: d.consentText }] } };
+    const body = JSON.stringify({ fields, legalConsentOptions, context: { pageUri: location.href, pageName: 'The Guru Theory website (' + d.source + ')' } });
     return timed(fetch(`https://api.hsforms.com/submissions/v3/integration/submit/${HUBSPOT.portalId}/${HUBSPOT.formGuid}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }), 12000).then(r => r.ok, () => false);
   };
   const save = async d => {
@@ -453,11 +460,14 @@ footer .t{font:600 20px var(--serif);color:var(--ink)}
       ev.preventDefault();
       const msg = $('.msg', form), btn = $('button', form);
       const email = form.email.value.trim();
-      const name = form.name ? form.name.value.trim().slice(0, 80) : '';
+      const name = form.name.value.trim().slice(0, 80);
+      const consent = form.consent;
+      if (!name) { msg.textContent = 'Please enter your first name.'; form.name.focus(); return; }
       if (!okEmail(email)) { msg.textContent = 'Please enter a valid email address.'; form.email.focus(); return; }
+      if (!consent.checked) { msg.textContent = 'Please tick the box so we can email you.'; consent.focus(); return; }
       btn.disabled = true; msg.textContent = 'Joining…';
       if (form.website && form.website.value) { showDone(email); return; }
-      const ok = await save({ email: email.slice(0, 254), name, source: form.dataset.source });
+      const ok = await save({ email: email.slice(0, 254), name, source: form.dataset.source, consentText: consent.parentElement.textContent.trim() });
       if (ok) showDone(email);
       else { msg.textContent = 'Something went wrong. Please try again, or email info@thegurutheory.guru.'; btn.disabled = false; }
     });
